@@ -1,0 +1,81 @@
+version: 1
+image:
+  from_image: hb.seetatech.com/autodl-workspace/tensorflow:gpu-py3-v1.14.0
+  runs:
+    - pip3 install Cython==0.29.14 seeta-helper==0.0.6 seeta_dataset==0.0.8 librosa==0.6.2 soundFile==0.10.2
+      easydict==1.9 -i https://pypi.tuna.tsinghua.edu.cn/simple
+
+parameter:
+  EXP_DIR: /tmp/detection_model
+  DATA_DIR: /tmp/dataset
+  IS_MULTISCALE: False
+  NET_NAME: VGGnet
+  ANCHOR_SCALES: [16]
+  NCLASSES: 2
+  USE_GPU_NMS: True
+  TRAIN:
+    restore: False
+    EPOCH: 55
+    SOLVER: Adam
+    OHEM: False
+    RPN_BATCHSIZE: 300
+    BATCH_SIZE: 300
+    LOG_IMAGE_ITERS: 100
+    DISPLAY: 10
+    SNAPSHOT_ITERS: 5000
+    HAS_RPN: True
+    LEARNING_RATE: 0.001 # 0.00001
+    MOMENTUM: 0.9
+    GAMMA: 0.1
+    STEPSIZE: 40000
+    IMS_PER_BATCH: 1
+    BBOX_NORMALIZE_TARGETS_PRECOMPUTED: True
+    RPN_POSITIVE_OVERLAP: 0.7
+    PROPOSAL_METHOD: gt
+    BG_THRESH_LO: 0.00
+    PRECLUDE_HARD_SAMPLES: True
+    BBOX_INSIDE_WEIGHTS: [0, 1, 0, 1]
+    RPN_BBOX_INSIDE_WEIGHTS: [0, 1, 0, 1]
+    RPN_POSITIVE_WEIGHT: -1.0
+    FG_FRACTION: 0.3
+    WEIGHT_DECAY: 0.0005
+  TEST:
+    HAS_RPN: True
+    DETECT_MODE: H
+    TEST_DATA: /tmp/dataset
+    OUTPUT_DIR: /output
+    OUTPUT_NAME: seeta_dataset
+    checkpoints_path: /tmp/detection_model
+
+train:
+  resource:
+    default_resources:
+      cpu:
+        limits: 4
+      gpu:
+        limits: 1
+      memory:
+        limits: 10240
+  mount:
+    train-data-placeholder: /tmp/dataset
+  output: /tmp/detection_model
+  cmd: cd lib/utils/ && rm *.so && sh make.sh && cd ../../ && python3 train_net.py
+
+infer:
+  resource:
+    default_resources:
+      cpu:
+        limits: 4
+      gpu:
+        limits: 1
+      memory:
+        limits: 10240
+  ref_model:
+    1: /tmp/detection_model
+  mount:
+    data-placeholder: /tmp/dataset
+  output: /output
+  cmd: python3 infer.py
+
+
+

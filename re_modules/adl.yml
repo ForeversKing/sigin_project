@@ -1,0 +1,57 @@
+version: 1
+image:
+  from_image: hb.seetatech.com/autodl-workspace/tensorflow:gpu-py3-v1.14.0
+  runs:
+    - pip3 install seeta-helper==0.0.6 seeta_dataset==0.0.8
+      easydict==1.9 -i https://pypi.tuna.tsinghua.edu.cn/simple
+
+parameter:
+  TRAIN:
+    restore: False
+    epoch: 20
+    batch_size: 32
+    learning_rate: 0.001
+    momentum: 0.9
+    wd: 0.00002
+    num_classes: 5
+    data_dir: /tmp/dataset
+    output: /tmp/recognize_model
+
+  TEST:
+    data_dir: /tmp/dataset
+    output: /output
+    output_name: seeta_dataset
+    checkpoints_path: /tmp/recognize_model
+
+train:
+  resource:
+    default_resources:
+      cpu:
+        limits: 4
+      gpu:
+        limits: 1
+      memory:
+        limits: 10240
+  mount:
+    train-data-placeholder: /tmp/dataset
+  output: /tmp/recognize_model
+  cmd: python3 seeta_train.py
+
+infer:
+  resource:
+    default_resources:
+      cpu:
+        limits: 4
+      gpu:
+        limits: 1
+      memory:
+        limits: 10240
+  ref_model:
+    1: /tmp/recognize_model
+  mount:
+    data-placeholder: /tmp/dataset
+  output: /output
+  cmd: python3 seeta_infer.py
+
+
+
